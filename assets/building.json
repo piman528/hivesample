@@ -1,0 +1,56 @@
+{
+    "buildings": [
+        {
+            "id": "0",
+            "name": "1号館",
+            "rooms": {
+                "1F": [
+                    {
+                        "roomId": "0",
+                        "roomName": "G1001"
+                    },
+                    {
+                        "roomId": "1",
+                        "roomName": "G1002"
+                    }
+                ],
+                "2F": [
+                    {
+                        "roomId": "2",
+                        "roomName": "G2001"
+                    },
+                    {
+                        "roomId": "3",
+                        "roomName": "G2002"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "1",
+            "name": "2号館",
+            "rooms": {
+                "1F": [
+                    {
+                        "roomId": "4",
+                        "roomName": "H1001"
+                    },
+                    {
+                        "roomId": "5",
+                        "roomName": "H1002"
+                    }
+                ],
+                "2F": [
+                    {
+                        "roomId": "6",
+                        "roomName": "H2001"
+                    },
+                    {
+                        "roomId": "7",
+                        "roomName": "H2002"
+                    }
+                ]
+            }
+        }
+    ]
+}
