@@ -1,16 +1,23 @@
 class Room {
+  final String roomId;
+  final String roomName;
+
   Room({
     required this.roomId,
     required this.roomName,
   });
 
-  final String roomName;
-  final int roomId;
+  Map<String, dynamic> toMap() {
+    return {
+      'roomId': roomId,
+      'roomName': roomName,
+    };
+  }
 
   factory Room.fromJson(Map<String, dynamic> json) {
     return Room(
-      roomId: json['roomId'] as int,
-      roomName: json['roomName'] as String,
+      roomId: json['roomId'],
+      roomName: json['roomName'],
     );
   }
 }
