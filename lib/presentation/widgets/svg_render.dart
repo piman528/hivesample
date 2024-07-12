@@ -1,8 +1,8 @@
-import 'package:aitapp/domain/types/map_shape.dart';
 import 'package:flutter/material.dart';
+import 'package:hivesample/model/map_shape.dart';
 
 class SVGMapRender extends CustomPainter {
-  SVGMapRender({required this.selectShape, required this.shapes});
+  SVGMapRender({this.selectShape, required this.shapes});
   final List<MapShape> shapes;
   final Paint _paint = Paint();
   Size _size = Size.zero;

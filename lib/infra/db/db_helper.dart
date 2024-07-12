@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:hivesample/model/building.dart';
+import 'package:hivesample/model/room.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -60,20 +61,21 @@ class DatabaseHelper {
       final building = Building.fromJson(buildingJson);
       batch.insert('buildings', building.toMap(),
           conflictAlgorithm: ConflictAlgorithm.replace);
-
-      building.rooms.forEach((floor, rooms) {
-        for (var room in rooms) {
-          batch.insert(
-              'rooms',
-              {
-                'roomId': room.roomId,
-                'buildingId': building.id,
-                'floor': floor,
-                'roomName': room.roomName,
-              },
-              conflictAlgorithm: ConflictAlgorithm.replace);
-        }
-      });
+      if (building.rooms != null) {
+        building.rooms!.forEach((floor, rooms) {
+          for (var room in rooms) {
+            batch.insert(
+                'rooms',
+                {
+                  'roomId': room.roomId,
+                  'buildingId': building.id,
+                  'floor': floor,
+                  'roomName': room.roomName,
+                },
+                conflictAlgorithm: ConflictAlgorithm.replace);
+          }
+        });
+      }
     }
 
     await batch.commit();
@@ -96,7 +98,6 @@ class DatabaseHelper {
     return await db.rawQuery('''
       SELECT buildings.name as buildingName
       FROM buildings
-      JOIN rooms ON buildings.id = rooms.buildingId
       WHERE buildings.name LIKE '%$searchWord%'
       ORDER BY buildings.name
     ''');
@@ -113,5 +114,47 @@ class DatabaseHelper {
       WHERE rooms.roomName LIKE '%$searchWord%'
       ORDER BY buildings.name, rooms.floor, rooms.roomName
     ''');
+  }
+
+  Future<Building?> getBuildingById(int id) async {
+    final db = await database;
+
+    // 建物の基本情報を取得
+    final List<Map<String, dynamic>> buildingMaps = await db.query(
+      'buildings',
+      where: 'id = ?',
+      whereArgs: [id.toString()], // SQLiteではIDを文字列として保存しているため
+    );
+
+    if (buildingMaps.isEmpty) {
+      return null; // 指定されたIDの建物が見つからない場合
+    }
+
+    // 建物の部屋情報を取得
+    final List<Map<String, dynamic>> roomMaps = await db.query(
+      'rooms',
+      where: 'buildingId = ?',
+      whereArgs: [id.toString()],
+    );
+
+    // Building オブジェクトを作成するための JSON を準備
+    final buildingJson = <String, List<Room>>{};
+
+    // 部屋情報を JSON に追加
+    for (var roomMap in roomMaps) {
+      final floor = roomMap['floor'] as String;
+      if (buildingJson[floor] == null) {
+        buildingJson[floor] = [];
+      }
+      buildingJson[floor]!
+          .add(Room(roomId: roomMap['roomId'], roomName: roomMap['roomName']));
+    }
+
+    // Building オブジェクトを作成して返す
+    return Building(
+        id: int.parse(buildingMaps.first['id']),
+        name: buildingMaps.first['name'],
+        rooms: buildingJson);
+    ;
   }
 }

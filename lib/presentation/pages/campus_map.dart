@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hivesample/building_probvider.dart';
+import 'package:hivesample/presentation/widgets/building_info_sheet.dart';
+import 'package:hivesample/presentation/widgets/svg_map.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class CampusMap extends HookConsumerWidget {
   const CampusMap({super.key});
@@ -14,7 +18,9 @@ class CampusMap extends HookConsumerWidget {
     final transformationController = useMemoized(
       () => TransformationController(initialMatrix),
     );
+
     final pixel = useState<double>(200);
+    final previousScale = useRef<double>(initialMatrix.getMaxScaleOnAxis());
     final controllerReset = useAnimationController(
       duration: const Duration(milliseconds: 250),
     );
@@ -29,11 +35,22 @@ class CampusMap extends HookConsumerWidget {
       }
     }
 
+    void _onTransformChanged() {
+      final double currentScale =
+          transformationController.value.getMaxScaleOnAxis();
+      if (previousScale.value != currentScale) {
+        print('現在の拡大率: $currentScale');
+        previousScale.value = currentScale;
+        if (currentScale < 5) {}
+      }
+    }
+
     useEffect(
       () {
         controller.addListener(() {
           pixel.value = controller.pixels + 10;
         });
+        transformationController.addListener(_onTransformChanged);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.watch(shapeProvider.notifier).state = null;
           pixel.value = controller.pixels + 10;
@@ -93,6 +110,9 @@ class CampusMap extends HookConsumerWidget {
       },
       [],
     );
+
+    final currentScale = transformationController.value.getMaxScaleOnAxis();
+    print(currentScale);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
