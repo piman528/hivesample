@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hivesample/model/map_shape.dart';
 
 class SVGMapRender extends CustomPainter {
-  SVGMapRender({this.selectShape, required this.shapes});
+  SVGMapRender({
+    this.selectShape,
+    required this.shapes,
+    required this.scale,
+  });
+  final double scale;
   final List<MapShape> shapes;
   final Paint _paint = Paint();
   Size _size = Size.zero;
@@ -36,13 +41,13 @@ class SVGMapRender extends CustomPainter {
       if (shape == selectShape) {
         _paint
           ..color = shape.strokeColor
-          ..strokeWidth = 0.5
+          ..strokeWidth = shape.strokeWidth / scale
           ..style = PaintingStyle.stroke
           ..maskFilter = null;
       } else {
         _paint
           ..color = shape.strokeColor
-          ..strokeWidth = shape.strokeWidth / 10
+          ..strokeWidth = shape.strokeWidth / (scale * 2)
           ..style = PaintingStyle.stroke;
       }
       canvas.drawPath(path!, _paint);

@@ -96,7 +96,7 @@ class DatabaseHelper {
 
     // 検索ワードを含む建物情報をクエリする
     return await db.rawQuery('''
-      SELECT buildings.name as buildingName
+      SELECT buildings.name as buildingName, buildings.id
       FROM buildings
       WHERE buildings.name LIKE '%$searchWord%'
       ORDER BY buildings.name
@@ -108,7 +108,7 @@ class DatabaseHelper {
 
     // 検索ワードを含む建物情報をクエリする
     return await db.rawQuery('''
-      SELECT buildings.name as buildingName, rooms.floor, rooms.roomName
+      SELECT buildings.id, buildings.name as buildingName, rooms.floor, rooms.roomName, rooms.roomId
       FROM buildings
       JOIN rooms ON buildings.id = rooms.buildingId
       WHERE rooms.roomName LIKE '%$searchWord%'
@@ -155,6 +155,5 @@ class DatabaseHelper {
         id: int.parse(buildingMaps.first['id']),
         name: buildingMaps.first['name'],
         rooms: buildingJson);
-    ;
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:hivesample/building_probvider.dart';
-import 'package:hivesample/model/building.dart';
+import 'package:hivesample/model/building_room.dart';
+import 'package:hivesample/provider/mapshapes_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class BuildingItem extends ConsumerWidget {
-  const BuildingItem({super.key, required this.building});
-  final Building building;
+class RoomItem extends ConsumerWidget {
+  const RoomItem({super.key, required this.room});
+  final BuildingRoom room;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,13 +14,14 @@ class BuildingItem extends ConsumerWidget {
       children: [
         InkWell(
           onTap: () {
-            ref.read(shapeProvider.notifier).state = building.id;
+            ref.read(mapShapesNotifierProvider.notifier).selectShape(room.id);
           },
           child: Container(
             height: 50,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
             width: double.infinity,
-            child: Text(building.name),
+            child:
+                Text('${room.buildingName} > ${room.floor} > ${room.roomName}'),
           ),
         ),
         const Divider(),

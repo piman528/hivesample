@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hivesample/building_probvider.dart';
-import 'package:hivesample/presentation/widgets/building_info_sheet.dart';
-import 'package:hivesample/presentation/widgets/svg_map.dart';
+import 'package:hivesample/presentation/widgets/map_info_sheet.dart';
+import 'package:hivesample/presentation/widgets/map_body.dart';
+import 'package:hivesample/presentation/widgets/search_bar.dart';
+import 'package:hivesample/provider/mapshapes_provider.dart';
+import 'package:hivesample/provider/textfield_word_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class CampusMap extends HookConsumerWidget {
@@ -11,9 +13,10 @@ class CampusMap extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = useMemoized(DraggableScrollableController.new);
+    final textController = useTextEditingController();
 
     final initialMatrix = useMemoized(
-      () => Matrix4.translationValues(-250, -750, 0).scaled(2.6),
+      () => Matrix4.translationValues(-250, -800, 0).scaled(2.6),
     );
     final transformationController = useMemoized(
       () => TransformationController(initialMatrix),
@@ -21,6 +24,7 @@ class CampusMap extends HookConsumerWidget {
 
     final pixel = useState<double>(200);
     final previousScale = useRef<double>(initialMatrix.getMaxScaleOnAxis());
+    final currentScale = useState<double>(previousScale.value);
     final controllerReset = useAnimationController(
       duration: const Duration(milliseconds: 250),
     );
@@ -35,7 +39,7 @@ class CampusMap extends HookConsumerWidget {
       }
     }
 
-    void _onTransformChanged() {
+    void onTransformChanged() {
       final double currentScale =
           transformationController.value.getMaxScaleOnAxis();
       if (previousScale.value != currentScale) {
@@ -45,20 +49,26 @@ class CampusMap extends HookConsumerWidget {
       }
     }
 
+    void textOnChange() {
+      ref.read(textfieldWordNotifierProvider.notifier).set(textController.text);
+    }
+
     useEffect(
       () {
         controller.addListener(() {
           pixel.value = controller.pixels + 10;
         });
-        transformationController.addListener(_onTransformChanged);
+        textController.addListener(textOnChange);
+        transformationController.addListener(onTransformChanged);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.watch(shapeProvider.notifier).state = null;
+          ref.read(mapShapesNotifierProvider.notifier).selectShape(null);
           pixel.value = controller.pixels + 10;
         });
         return null;
       },
       [],
     );
+
     void bottomSheetSizeInitialize(double size) {
       controller.animateTo(
         size,
@@ -76,13 +86,13 @@ class CampusMap extends HookConsumerWidget {
         ).chain(CurveTween(curve: Curves.decelerate)).animate(controllerReset);
         animationReset!.addListener(onAnimateReset);
         controllerReset.forward();
-        bottomSheetSizeInitialize(0.5);
+        bottomSheetSizeInitialize(0.45);
       }
     }
 
-    ref.listen(shapeProvider, (previous, next) {
-      if (next != null) {
-        final bounds = next.mapShape!.transformedPath!.getBounds();
+    ref.listen(mapShapesNotifierProvider, (previous, next) {
+      if (next.getSelectShape() != null) {
+        final bounds = next.getSelectShape()!.transformedPath!.getBounds();
         final centerX = bounds.left + bounds.width / 2;
         final centerY = bounds.top + bounds.height / 2;
         final scale = (100 / bounds.width + 100 / bounds.height) / 2;
@@ -100,7 +110,7 @@ class CampusMap extends HookConsumerWidget {
         final observer = _KeyboardVisibilityObserver(
           ({required bool visible}) {
             if (visible) {
-              bottomSheetSizeInitialize(1);
+              // bottomSheetSizeInitialize(1);
             }
           },
           context,
@@ -111,37 +121,88 @@ class CampusMap extends HookConsumerWidget {
       [],
     );
 
-    final currentScale = transformationController.value.getMaxScaleOnAxis();
-    print(currentScale);
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text(
-          'マップ',
-        ),
-        centerTitle: true,
-      ),
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           InteractiveViewer(
             transformationController: transformationController,
             maxScale: 15,
             minScale: 2,
-            child: const SVGMap(),
+            child: SVGMap(
+              scale: currentScale.value,
+            ),
           ),
           Positioned(
             bottom: pixel.value,
             right: 16,
             child: FloatingActionButton(
+              shape: const CircleBorder(), // 丸い形状を指定
+              backgroundColor: Colors.white,
               onPressed: () {
-                ref.read(shapeProvider.notifier).state = null;
+                ref.read(mapShapesNotifierProvider.notifier).selectShape(null);
                 animateResetInitialize(initialMatrix);
               },
               child: const Icon(Icons.home),
             ),
           ),
-          BuildingInfoSheet(controller: controller),
+          Positioned(
+            child: BuildingInfoSheet(controller: controller),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 50, // サーチバーの高さと同じ
+                  height: 50, // サーチバーの高さと同じ
+                  child: FloatingActionButton(
+                    shape: const CircleBorder(), // 丸い形状を指定
+                    backgroundColor: Colors.white.withOpacity(0.8),
+                    onPressed: () {
+                      ref
+                          .read(mapShapesNotifierProvider.notifier)
+                          .selectShape(null);
+                      animateResetInitialize(initialMatrix);
+                    },
+                    child: const Icon(Icons.arrow_back),
+                  ),
+                ),
+                const SizedBox(
+                  width: 20,
+                ),
+                Expanded(
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius:
+                          BorderRadius.circular(25), // 高さの半分で完全な丸みを持たせる,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: SearchBarWidget(
+                      hintText: '建物を検索',
+                      controller: textController,
+                      onSubmitted: (_) {
+                        ref
+                            .read(mapShapesNotifierProvider.notifier)
+                            .selectShape(null);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

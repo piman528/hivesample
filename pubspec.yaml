@@ -48,6 +48,8 @@ dependencies:
   xml: ^6.5.0
   hooks_riverpod: ^2.5.1
   collection: ^1.18.0
+  riverpod_annotation: ^2.3.5
+  riverpod_generator: ^2.4.0
 
 dev_dependencies:
   flutter_test:

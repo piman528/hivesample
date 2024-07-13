@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hivesample/building_probvider.dart';
 import 'package:hivesample/infra/db/db_helper.dart';
 import 'package:hivesample/model/building.dart';
+import 'package:hivesample/model/building_room_list.dart';
+import 'package:hivesample/presentation/widgets/map_building_item.dart';
+import 'package:hivesample/presentation/widgets/map_room_item.dart';
+import 'package:hivesample/provider/mapshapes_provider.dart';
+import 'package:hivesample/provider/textfield_word_provider.dart';
+import 'package:hivesample/search_building_usecase.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class BuildingInfoSheet extends HookConsumerWidget {
@@ -11,32 +16,36 @@ class BuildingInfoSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textEditingController = useTextEditingController();
-    final selectBuildingint = ref.watch(shapeProvider);
-    final typeWord = useState('');
-    final db = DatabaseHelper();
+    final selectBuildingint = ref.watch(mapShapesNotifierProvider);
+    final typeWord = ref.watch(textfieldWordNotifierProvider);
     final selectBuilding = useState<Building?>(null);
+    final usecase = useMemoized(SearchBuildingUsecase.new, []);
 
-    useEffect(() {
-      if (selectBuildingint != null) {
-        db.getBuildingById(selectBuildingint).then((building) {
-          selectBuilding.value = building;
-          print(building?.name);
-        });
-      } else {
-        selectBuilding.value = null;
-      }
-      return null;
-    }, [selectBuildingint]);
+    final searchFuture = useMemoized(
+      () {
+        return typeWord != ''
+            ? usecase.searchBuildingRoom(typeWord)
+            : Future<BuildingRoomList?>.value(null);
+      },
+      [typeWord],
+    );
+
+    final buildingRooms = useFuture(searchFuture);
 
     useEffect(
       () {
-        textEditingController.addListener(() {
-          typeWord.value = textEditingController.text;
-        });
+        if (selectBuildingint.selectedShapeId != null) {
+          DatabaseHelper()
+              .getBuildingById(selectBuildingint.selectedShapeId!)
+              .then((building) {
+            selectBuilding.value = building;
+          });
+        } else {
+          selectBuilding.value = null;
+        }
         return null;
       },
-      [],
+      [selectBuildingint],
     );
 
     late final List<Widget> content;
@@ -101,6 +110,21 @@ class BuildingInfoSheet extends HookConsumerWidget {
             ),
           },
         },
+      ];
+    } else if (typeWord != '') {
+      content = [
+        if (buildingRooms.hasData) ...{
+          for (final building in buildingRooms.data!.buildings) ...{
+            BuildingItem(building: building),
+          },
+          for (final room in buildingRooms.data!.rooms) ...{
+            RoomItem(room: room),
+          },
+        } else if (buildingRooms.hasError) ...{
+          Text('エラーが発生しました: ${buildingRooms.error}'),
+        } else ...{
+          const CircularProgressIndicator(),
+        }
       ];
     } else {
       content = [

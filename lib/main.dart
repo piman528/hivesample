@@ -7,30 +7,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final dbHelper = DatabaseHelper();
-
-  // if (!(await dbHelper.isTableExists('buildings'))) {
-  //   final jsonData = await rootBundle.loadString('assets/building.json');
-  //   print('a');
-  //   await dbHelper.importFromJson(jsonData);
-  //   print('1');
-  // }
   final jsonData = await rootBundle.loadString('assets/building.json');
-  await dbHelper.importFromJson(jsonData);
-  // final allInfo = await dbHelper.getAllBuildingInfo();
-  // for (var info in allInfo) {
-  //   print(
-  //       '建物: ${info['buildingName']}, フロア: ${info['floor']}, 部屋: ${info['roomName']}');
-  // }
-  // final result = await dbHelper.searchRoom('G');
-  // for (var info in result) {
-  //   print(
-  //       '建物: ${info['buildingName']}, フロア: ${info['floor']}, 部屋: ${info['roomName']}');
-  // }
-  final result1 = await dbHelper.searchBuilding('');
-  for (var info in result1) {
-    print('建物: ${info['buildingName']}');
-  }
+  await DatabaseHelper().importFromJson(jsonData);
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
